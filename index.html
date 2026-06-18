@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nikki — ジャーナル</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Nikki">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="theme-color" content="#0A0A0A">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0A0A0A;
+    --bg2: #111111;
+    --card: #161616;
+    --card2: #1C1C1C;
+    --border: #282828;
+    --gold: #C8A96E;
+    --gold-dim: rgba(200,169,110,0.12);
+    --text: #F5F0E8;
+    --text-dim: #8A8070;
+    --text-muted: #4A4540;
+    /* section accent colors */
+    --memo-color: #6E9FC8;
+    --memo-dim: rgba(110,159,200,0.12);
+    --insight-color: #7EC87A;
+    --insight-dim: rgba(126,200,122,0.12);
+    --worry-color: #C87A7A;
+    --worry-dim: rgba(200,122,122,0.12);
+  }
+
+  html { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.6; }
+  body { min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* LAYOUT */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar { width: 260px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 32px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .main { flex: 1; max-width: 800px; padding: 48px 48px 80px; overflow-y: auto; }
+  .panel { width: 290px; flex-shrink: 0; padding: 48px 28px; border-left: 1px solid var(--border); display: flex; flex-direction: column; gap: 24px; overflow-y: auto; }
+
+  /* SIDEBAR */
+  .logo { font-family: 'DM Serif Display', serif; font-size: 22px; letter-spacing: 0.04em; color: var(--gold); padding: 0 28px 32px; border-bottom: 1px solid var(--border); }
+  .logo span { display: block; font-size: 10px; font-family: 'Inter', sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim); font-weight: 500; margin-top: 2px; }
+
+  .streak-box { margin: 24px 20px; background: var(--gold-dim); border: 1px solid rgba(200,169,110,0.3); border-radius: 12px; padding: 20px; text-align: center; }
+  .streak-num { font-family: 'DM Serif Display', serif; font-size: 48px; color: var(--gold); line-height: 1; }
+  .streak-label { font-size: 11px; color: var(--text-dim); letter-spacing: 0.15em; text-transform: uppercase; margin-top: 4px; }
+  .streak-sub { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+
+  .nav { padding: 8px 12px; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--text-dim); transition: all 0.15s; margin-bottom: 2px; }
+  .nav-item:hover { background: var(--card); color: var(--text); }
+  .nav-item.active { background: var(--card2); color: var(--text); }
+  .nav-item .icon { width: 18px; text-align: center; }
+
+  .sidebar-footer { padding: 20px 28px; border-top: 1px solid var(--border); }
+  .month-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
+  .mini-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-day { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-muted); border-radius: 6px; cursor: pointer; }
+  .cal-day.has-entry { color: var(--text); background: var(--card2); }
+  .cal-day.today { color: var(--bg); background: var(--gold); font-weight: 600; }
+  .cal-day.empty { opacity: 0; pointer-events: none; }
+
+  /* MAIN HEADER */
+  .date-header { margin-bottom: 36px; }
+  .date-eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .date-big { font-family: 'DM Serif Display', serif; font-size: 44px; line-height: 1.1; color: var(--text); }
+  .date-big em { font-style: italic; color: var(--gold); }
+
+  /* MOOD */
+  .field-label { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
+  .mood-row { display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+  .mood-btn { background: var(--card); border: 1px solid var(--border); border-radius: 50px; padding: 7px 14px; font-size: 13px; cursor: pointer; color: var(--text-dim); transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
+  .mood-btn:hover { border-color: var(--gold); color: var(--text); }
+  .mood-btn.selected { background: var(--gold-dim); border-color: var(--gold); color: var(--text); }
+
+  /* SECTION BLOCKS */
+  .section-block { margin-bottom: 20px; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
+  .section-block-header { display: flex; align-items: center; gap: 10px; padding: 14px 20px; cursor: pointer; user-select: none; border-bottom: 1px solid transparent; transition: background 0.15s; }
+  .section-block-header:hover { background: var(--card2); }
+  .section-block.open .section-block-header { border-bottom-color: var(--border); }
+  .section-block-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .section-block-title { font-size: 13px; font-weight: 500; color: var(--text-dim); flex: 1; letter-spacing: 0.03em; }
+  .section-block.open .section-block-title { color: var(--text); }
+  .section-block-preview { font-size: 12px; color: var(--text-muted); max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .section-block-chevron { font-size: 11px; color: var(--text-muted); transition: transform 0.2s; }
+  .section-block.open .section-block-chevron { transform: rotate(180deg); }
+  .section-block-body { display: none; padding: 16px 20px 20px; }
+  .section-block.open .section-block-body { display: block; }
+
+  /* TEXTAREA STYLES */
+  .field-textarea { width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--text); line-height: 1.8; resize: none; outline: none; transition: border-color 0.2s; min-height: 120px; }
+  .field-textarea:focus { border-color: rgba(200,169,110,0.35); }
+  .field-textarea::placeholder { color: var(--text-muted); }
+  .field-textarea.memo-focus:focus { border-color: rgba(110,159,200,0.4); }
+  .field-textarea.insight-focus:focus { border-color: rgba(126,200,122,0.4); }
+  .field-textarea.worry-focus:focus { border-color: rgba(200,122,122,0.4); }
+
+  /* today body is bigger */
+  #editor { min-height: 180px; font-size: 15px; }
+
+  .char-count { font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 6px; }
+
+  /* SAVE */
+  .save-btn { background: var(--gold); color: var(--bg); border: none; border-radius: 8px; padding: 12px 28px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; letter-spacing: 0.02em; transition: opacity 0.15s; }
+  .save-btn:hover { opacity: 0.88; }
+  .save-row { display: flex; align-items: center; gap: 16px; margin-top: 24px; }
+  .save-msg { font-size: 13px; color: var(--gold); opacity: 0; transition: opacity 0.3s; }
+  .save-msg.show { opacity: 1; }
+
+  /* DIVIDER */
+  .section-divider { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+
+  /* ENTRY CARDS */
+  .section-title { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 20px; }
+  .entry-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; margin-bottom: 10px; cursor: pointer; transition: background 0.15s; }
+  .entry-card:hover { background: var(--card2); }
+  .entry-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .entry-date { font-size: 12px; color: var(--text-dim); letter-spacing: 0.04em; }
+  .entry-mood-badge { font-size: 12px; }
+  .entry-preview { font-size: 14px; color: var(--text-dim); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* entry card section pills */
+  .entry-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .entry-pill { font-size: 10px; letter-spacing: 0.08em; padding: 3px 9px; border-radius: 50px; border: 1px solid; }
+  .pill-memo { color: var(--memo-color); border-color: rgba(110,159,200,0.35); background: var(--memo-dim); }
+  .pill-insight { color: var(--insight-color); border-color: rgba(126,200,122,0.35); background: var(--insight-dim); }
+  .pill-worry { color: var(--worry-color); border-color: rgba(200,122,122,0.35); background: var(--worry-dim); }
+
+  /* PANEL */
+  .panel-title { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+  .reflection-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 12px; }
+  .reflection-ago { font-family: 'DM Serif Display', serif; font-size: 13px; color: var(--gold); margin-bottom: 8px; font-style: italic; }
+  .reflection-text { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
+  .reflection-reply { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .reflection-reply textarea { width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-family: 'Inter', sans-serif; font-size: 12px; color: var(--text); resize: none; outline: none; min-height: 56px; }
+  .reply-btn { margin-top: 7px; background: transparent; border: 1px solid var(--border); color: var(--text-dim); border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .reply-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  .prompt-card { background: var(--gold-dim); border: 1px solid rgba(200,169,110,0.2); border-radius: 12px; padding: 16px 18px; }
+  .prompt-icon { font-size: 16px; margin-bottom: 6px; }
+  .prompt-text { font-family: 'DM Serif Display', serif; font-style: italic; font-size: 14px; color: var(--text); line-height: 1.5; }
+  .prompt-use { margin-top: 10px; background: transparent; border: none; font-size: 12px; color: var(--gold); cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
+
+  .stats-row { display: flex; gap: 8px; }
+  .stat-box { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; }
+  .stat-num { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--text); }
+  .stat-lbl { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-top: 2px; }
+
+  /* VIEWS */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 600px; max-width: 92vw; max-height: 82vh; overflow-y: auto; }
+  .modal-close { float: right; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px; padding: 4px 8px; }
+  .modal-date { font-family: 'DM Serif Display', serif; font-size: 28px; margin-bottom: 4px; }
+  .modal-mood { font-size: 13px; color: var(--text-dim); margin-bottom: 20px; }
+  .modal-section { margin-bottom: 20px; }
+  .modal-section-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
+  .modal-section-body { font-size: 14px; color: var(--text-dim); line-height: 1.8; white-space: pre-wrap; }
+  .modal-section-label.lbl-diary { color: var(--gold); }
+  .modal-section-label.lbl-memo  { color: var(--memo-color); }
+  .modal-section-label.lbl-insight { color: var(--insight-color); }
+  .modal-section-label.lbl-worry { color: var(--worry-color); }
+
+  @media (max-width: 960px) { .panel { display: none; } .main { padding: 32px 24px 60px; } }
+  @media (max-width: 640px) { .sidebar { display: none; } .main { padding: 24px 16px 60px; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">Nikki<span>Your Journal</span></div>
+    <div class="streak-box">
+      <div class="streak-num" id="streak-num">0</div>
+      <div class="streak-label">日連続</div>
+      <div class="streak-sub" id="streak-sub">今日を記録しよう</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" onclick="switchView('today')"><span class="icon">✦</span> 今日</div>
+      <div class="nav-item" onclick="switchView('history')"><span class="icon">◈</span> 過去の記録</div>
+      <div class="nav-item" onclick="switchView('reflect')"><span class="icon">◎</span> 振り返り</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="month-label" id="cal-month-label"></div>
+      <div class="mini-cal" id="mini-cal"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- TODAY VIEW -->
+    <div class="view active" id="view-today">
+      <div class="date-header">
+        <div class="date-eyebrow" id="eyebrow-date"></div>
+        <div class="date-big" id="main-date"></div>
+      </div>
+
+      <!-- MOOD -->
+      <div class="field-label">今日の気分</div>
+      <div class="mood-row">
+        <button class="mood-btn" data-mood="happy" onclick="selectMood(this)">😊 良い</button>
+        <button class="mood-btn" data-mood="neutral" onclick="selectMood(this)">😐 普通</button>
+        <button class="mood-btn" data-mood="sad" onclick="selectMood(this)">😔 辛い</button>
+        <button class="mood-btn" data-mood="angry" onclick="selectMood(this)">😤 もやもや</button>
+        <button class="mood-btn" data-mood="tired" onclick="selectMood(this)">😴 疲れた</button>
+      </div>
+
+      <!-- DIARY -->
+      <div class="field-label">今日のこと</div>
+      <textarea class="field-textarea" id="editor" placeholder="今日はどんな一日でしたか？一言でもOKです。" oninput="updateCharCount()"></textarea>
+      <div class="char-count"><span id="char-count">0</span> 文字</div>
+
+      <!-- MEMO -->
+      <div class="section-block" id="block-memo">
+        <div class="section-block-header" onclick="toggleBlock('memo')">
+          <div class="section-block-dot" style="background:var(--memo-color)"></div>
+          <div class="section-block-title">📝 メモ</div>
+          <div class="section-block-preview" id="preview-memo">あとで見返したいことを残す</div>
+          <div class="section-block-chevron">▼</div>
+        </div>
+        <div class="section-block-body">
+          <div class="field-label" style="margin-bottom:10px; color:var(--memo-color);">メモ · 残しておきたいこと</div>
+          <textarea class="field-textarea memo-focus" id="editor-memo" placeholder="ToDo、気になった情報、あとで確認したいこと…" oninput="updatePreview('memo')"></textarea>
+        </div>
+      </div>
+
+      <!-- INSIGHT -->
+      <div class="section-block" id="block-insight">
+        <div class="section-block-header" onclick="toggleBlock('insight')">
+          <div class="section-block-dot" style="background:var(--insight-color)"></div>
+          <div class="section-block-title">💡 気づき</div>
+          <div class="section-block-preview" id="preview-insight">発見・学び・アハ体験を書く</div>
+          <div class="section-block-chevron">▼</div>
+        </div>
+        <div class="section-block-body">
+          <div class="field-label" style="margin-bottom:10px; color:var(--insight-color);">気づき · 学び · 発見</div>
+          <textarea class="field-textarea insight-focus" id="editor-insight" placeholder="今日気づいたこと、ハッとした瞬間、新しい視点…" oninput="updatePreview('insight')"></textarea>
+        </div>
+      </div>
+
+      <!-- WORRY -->
+      <div class="section-block" id="block-worry">
+        <div class="section-block-header" onclick="toggleBlock('worry')">
+          <div class="section-block-dot" style="background:var(--worry-color)"></div>
+          <div class="section-block-title">🌀 悩み</div>
+          <div class="section-block-preview" id="preview-worry">頭の中のモヤモヤを吐き出す</div>
+          <div class="section-block-chevron">▼</div>
+        </div>
+        <div class="section-block-body">
+          <div class="field-label" style="margin-bottom:10px; color:var(--worry-color);">悩み · 不安 · 迷い</div>
+          <textarea class="field-textarea worry-focus" id="editor-worry" placeholder="誰にも言えない不安、ぐるぐるする思考、迷っていること…" oninput="updatePreview('worry')"></textarea>
+        </div>
+      </div>
+
+      <div class="save-row">
+        <button class="save-btn" id="save-btn" onclick="saveEntry()">保存する</button>
+        <span class="save-msg" id="save-msg">✓ 保存しました</span>
+      </div>
+
+      <hr class="section-divider">
+      <div class="section-title">最近の記録</div>
+      <div id="recent-entries"></div>
+    </div>
+
+    <!-- HISTORY VIEW -->
+    <div class="view" id="view-history">
+      <div class="date-header">
+        <div class="date-eyebrow">すべての記録</div>
+        <div class="date-big">記録<em>一覧</em></div>
+      </div>
+      <div id="history-entries"></div>
+    </div>
+
+    <!-- REFLECT VIEW -->
+    <div class="view" id="view-reflect">
+      <div class="date-header">
+        <div class="date-eyebrow">過去の自分と対話する</div>
+        <div class="date-big">振り<em>返り</em></div>
+      </div>
+      <div id="reflect-entries"></div>
+      <div id="reflect-empty" style="display:none; color:var(--text-muted); font-size:14px; line-height:2.2;">
+        振り返れる記録はまだありません。<br>毎日記録を続けると、過去の自分が現れます。
+      </div>
+    </div>
+
+  </main>
+
+  <!-- PANEL -->
+  <aside class="panel">
+    <div>
+      <div class="panel-title">今日のひとこと</div>
+      <div class="prompt-card">
+        <div class="prompt-icon">✦</div>
+        <div class="prompt-text" id="daily-prompt"></div>
+        <button class="prompt-use" onclick="usePrompt()">このテーマで書く →</button>
+      </div>
+    </div>
+    <div>
+      <div class="panel-title">過去の振り返り</div>
+      <div id="side-reflections" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+    <div>
+      <div class="panel-title">統計</div>
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-num" id="stat-total">0</div><div class="stat-lbl">合計</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-month">0</div><div class="stat-lbl">今月</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-streak">0</div><div class="stat-lbl">最長</div></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">×</button>
+    <div class="modal-date" id="modal-date"></div>
+    <div class="modal-mood" id="modal-mood"></div>
+    <div id="modal-sections"></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'nikki_entries_v2';
+const moodEmoji  = { happy:'😊', neutral:'😐', sad:'😔', angry:'😤', tired:'😴' };
+const moodLabel  = { happy:'良い気分', neutral:'普通', sad:'辛い', angry:'もやもや', tired:'疲れた' };
+const prompts = [
+  '今日、小さな喜びを感じた瞬間はありましたか？',
+  '最近「ありがとう」と言いたい人は誰ですか？',
+  '今の自分に一言アドバイスするとしたら？',
+  '今日できたことを3つ挙げてみてください。',
+  '最近、何かを学びましたか？',
+  '今、何が一番頭にありますか？',
+  '今日会った人の中で、印象に残った人は？',
+  '明日の自分に残しておきたいことは？',
+];
+
+let selectedMood = null;
+
+/* ---- storage ---- */
+function loadEntries() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } }
+function saveEntries(e) { localStorage.setItem(STORAGE_KEY, JSON.stringify(e)); }
+function getTodayStr() { return new Date().toISOString().slice(0,10); }
+function formatDate(s) {
+  const d = new Date(s+'T00:00:00');
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${'日月火水木金土'[d.getDay()]}）`;
+}
+function daysDiff(a,b) { return Math.round((new Date(a)-new Date(b))/86400000); }
+function getDateStr(base,n) { const d=new Date(base+'T12:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function prevDay(d) { return getDateStr(d,-1); }
+
+/* ---- init ---- */
+function init() {
+  renderDateHeader();
+  renderMiniCal();
+  renderRecentEntries();
+  renderSideReflections();
+  renderStats();
+  renderPrompt();
+  loadTodayDraft();
+}
+
+function renderDateHeader() {
+  const now=new Date(), days=['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
+  document.getElementById('eyebrow-date').textContent = days[now.getDay()];
+  document.getElementById('main-date').innerHTML = `${now.getFullYear()}年<em>${now.getMonth()+1}月${now.getDate()}日</em>`;
+}
+
+/* ---- collapsible blocks ---- */
+function toggleBlock(name) {
+  const el = document.getElementById('block-'+name);
+  el.classList.toggle('open');
+}
+
+function updatePreview(name) {
+  const val = document.getElementById('editor-'+name).value.trim();
+  const prev = document.getElementById('preview-'+name);
+  if (val) prev.textContent = val.slice(0,30)+(val.length>30?'…':'');
+  else prev.textContent = name==='memo'?'あとで見返したいことを残す': name==='insight'?'発見・学び・アハ体験を書く':'頭の中のモヤモヤを吐き出す';
+}
+
+/* ---- mood ---- */
+function selectMood(btn) {
+  selectedMood = btn.dataset.mood;
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+/* ---- char count ---- */
+function updateCharCount() {
+  document.getElementById('char-count').textContent = document.getElementById('editor').value.length;
+}
+
+/* ---- prompt ---- */
+function renderPrompt() {
+  document.getElementById('daily-prompt').textContent = prompts[new Date().getDate()%prompts.length];
+}
+function usePrompt() {
+  const p = document.getElementById('daily-prompt').textContent;
+  const el = document.getElementById('editor');
+  el.value += (el.value?'\n\n':'')+p+'\n\n';
+  el.focus(); updateCharCount(); switchView('today');
+}
+
+/* ---- draft ---- */
+function loadTodayDraft() {
+  const entries=loadEntries(), today=getTodayStr();
+  const e = entries.find(x=>x.date===today);
+  if (e) {
+    document.getElementById('editor').value       = e.body    ||'';
+    document.getElementById('editor-memo').value  = e.memo    ||'';
+    document.getElementById('editor-insight').value= e.insight||'';
+    document.getElementById('editor-worry').value = e.worry   ||'';
+    selectedMood = e.mood;
+    document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('selected',b.dataset.mood===selectedMood));
+    document.getElementById('save-btn').textContent='更新する';
+    // open blocks that have content
+    ['memo','insight','worry'].forEach(n=>{
+      if(e[n]) { document.getElementById('block-'+n).classList.add('open'); updatePreview(n); }
+    });
+  }
+  updateCharCount();
+}
+
+/* ---- save ---- */
+function saveEntry() {
+  const body    = document.getElementById('editor').value.trim();
+  const memo    = document.getElementById('editor-memo').value.trim();
+  const insight = document.getElementById('editor-insight').value.trim();
+  const worry   = document.getElementById('editor-worry').value.trim();
+  if (!body && !memo && !insight && !worry) return;
+
+  const entries=loadEntries(), today=getTodayStr();
+  const idx=entries.findIndex(e=>e.date===today);
+  const entry={date:today,body,memo,insight,worry,mood:selectedMood,savedAt:new Date().toISOString()};
+  if(idx>=0) entries[idx]=entry; else entries.unshift(entry);
+  saveEntries(entries);
+
+  const msg=document.getElementById('save-msg');
+  msg.classList.add('show'); setTimeout(()=>msg.classList.remove('show'),2000);
+  document.getElementById('save-btn').textContent='更新する';
+  renderMiniCal(); renderRecentEntries(); renderSideReflections(); renderStats();
+}
+
+/* ---- streak ---- */
+function updateStreak(entries) {
+  const sorted=[...entries].sort((a,b)=>b.date.localeCompare(a.date));
+  const today=getTodayStr(); let streak=0,check=today;
+  for(const e of sorted){
+    if(e.date===check){streak++;check=prevDay(check);}
+    else if(e.date<check) break;
+  }
+  document.getElementById('streak-num').textContent=streak;
+  document.getElementById('streak-sub').textContent=
+    streak===0?'今日を記録しよう':streak===1?'今日から始まりました！':`${streak}日間、続いています`;
+}
+
+/* ---- mini calendar ---- */
+function renderMiniCal() {
+  const entries=loadEntries(), dates=new Set(entries.map(e=>e.date)), today=getTodayStr();
+  const now=new Date(), y=now.getFullYear(), m=now.getMonth();
+  document.getElementById('cal-month-label').textContent=`${y}年${m+1}月`;
+  const cal=document.getElementById('mini-cal'); cal.innerHTML='';
+  const firstDay=new Date(y,m,1).getDay(), daysInMonth=new Date(y,m+1,0).getDate();
+  for(let i=0;i<firstDay;i++){const el=document.createElement('div');el.className='cal-day empty';el.textContent='-';cal.appendChild(el);}
+  for(let d=1;d<=daysInMonth;d++){
+    const el=document.createElement('div');
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    el.className='cal-day'+(ds===today?' today':dates.has(ds)?' has-entry':'');
+    el.textContent=d;
+    if(dates.has(ds)) el.onclick=()=>openEntry(ds);
+    cal.appendChild(el);
+  }
+  updateStreak(entries);
+}
+
+/* ---- entry cards ---- */
+function entryPillsHTML(e) {
+  let pills='';
+  if(e.memo)    pills+=`<span class="entry-pill pill-memo">メモ</span>`;
+  if(e.insight) pills+=`<span class="entry-pill pill-insight">気づき</span>`;
+  if(e.worry)   pills+=`<span class="entry-pill pill-worry">悩み</span>`;
+  return pills ? `<div class="entry-pills">${pills}</div>` : '';
+}
+
+function entryCardHTML(e) {
+  const preview=(e.body||e.memo||e.insight||e.worry||'').slice(0,80);
+  const mood=e.mood?`<span class="entry-mood-badge">${moodEmoji[e.mood]}</span>`:'';
+  return `<div class="entry-card" onclick="openEntry('${e.date}')">
+    <div class="entry-meta"><span class="entry-date">${formatDate(e.date)}</span>${mood}</div>
+    <div class="entry-preview">${escapeHTML(preview)}${preview.length>=80?'…':''}</div>
+    ${entryPillsHTML(e)}
+  </div>`;
+}
+
+function renderRecentEntries() {
+  const entries=loadEntries(), today=getTodayStr();
+  const recent=entries.filter(e=>e.date!==today).slice(0,5);
+  const el=document.getElementById('recent-entries');
+  el.innerHTML=recent.length?recent.map(entryCardHTML).join(''):'<p style="color:var(--text-muted);font-size:14px;">まだ過去の記録はありません。</p>';
+}
+function renderHistoryEntries() {
+  const entries=loadEntries(), el=document.getElementById('history-entries');
+  el.innerHTML=entries.length?entries.map(entryCardHTML).join(''):'<p style="color:var(--text-muted);font-size:14px;">記録はまだありません。</p>';
+}
+
+/* ---- reflect ---- */
+function renderSideReflections() {
+  const entries=loadEntries(), today=getTodayStr();
+  const el=document.getElementById('side-reflections');
+  const cards=[];
+  for(const [days,ago] of [[7,'1週間前'],[30,'1ヶ月前'],[365,'1年前']]){
+    const target=getDateStr(today,-days);
+    const e=entries.find(x=>x.date===target)||entries.find(x=>Math.abs(daysDiff(x.date,target))<=3);
+    if(e) cards.push(`<div class="reflection-card"><div class="reflection-ago">${ago}の記録</div><div class="reflection-text">${escapeHTML((e.body||e.memo||e.insight||e.worry||'').slice(0,90))}…</div></div>`);
+  }
+  el.innerHTML=cards.length?cards.join(''):'<p style="color:var(--text-muted);font-size:12px;">まだ振り返れる記録がありません。</p>';
+}
+
+function renderReflectView() {
+  const entries=loadEntries(), today=getTodayStr();
+  const el=document.getElementById('reflect-entries'), emptyEl=document.getElementById('reflect-empty');
+  const targets=[{days:7,label:'1週間前'},{days:30,label:'1ヶ月前'},{days:90,label:'3ヶ月前'},{days:180,label:'半年前'},{days:365,label:'1年前'}];
+  const found=[];
+  for(const t of targets){
+    const target=getDateStr(today,-t.days);
+    const e=entries.find(x=>x.date===target)||entries.find(x=>Math.abs(daysDiff(x.date,target))<=5);
+    if(e) found.push({label:t.label,e});
+  }
+  if(!found.length){el.innerHTML='';emptyEl.style.display='block';return;}
+  emptyEl.style.display='none';
+  el.innerHTML=found.map(({label,e})=>{
+    const sections=[];
+    if(e.body)    sections.push(`<div class="modal-section"><div class="modal-section-label lbl-diary">日記</div><div class="modal-section-body">${escapeHTML(e.body)}</div></div>`);
+    if(e.memo)    sections.push(`<div class="modal-section"><div class="modal-section-label lbl-memo">メモ</div><div class="modal-section-body">${escapeHTML(e.memo)}</div></div>`);
+    if(e.insight) sections.push(`<div class="modal-section"><div class="modal-section-label lbl-insight">気づき</div><div class="modal-section-body">${escapeHTML(e.insight)}</div></div>`);
+    if(e.worry)   sections.push(`<div class="modal-section"><div class="modal-section-label lbl-worry">悩み</div><div class="modal-section-body">${escapeHTML(e.worry)}</div></div>`);
+    return `<div class="reflection-card" style="margin-bottom:16px;">
+      <div class="reflection-ago">${label} — ${formatDate(e.date)}</div>
+      ${e.mood?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">${moodEmoji[e.mood]} ${moodLabel[e.mood]}</div>`:''}
+      ${sections.join('')}
+      <div class="reflection-reply"><textarea placeholder="あの頃の自分へひとこと…" rows="2"></textarea><br><button class="reply-btn">送る</button></div>
+    </div>`;
+  }).join('');
+}
+
+/* ---- stats ---- */
+function renderStats() {
+  const entries=loadEntries(), now=new Date();
+  const thisMonth=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthCount=entries.filter(e=>e.date.startsWith(thisMonth)).length;
+  const sorted=[...entries].sort((a,b)=>a.date.localeCompare(b.date));
+  let maxS=0,cur=0;
+  for(let i=0;i<sorted.length;i++){cur=i===0?1:daysDiff(sorted[i].date,sorted[i-1].date)===1?cur+1:1;maxS=Math.max(maxS,cur);}
+  document.getElementById('stat-total').textContent=entries.length;
+  document.getElementById('stat-month').textContent=monthCount;
+  document.getElementById('stat-streak').textContent=maxS;
+}
+
+/* ---- modal ---- */
+function openEntry(dateStr) {
+  const e=loadEntries().find(x=>x.date===dateStr); if(!e) return;
+  document.getElementById('modal-date').textContent=formatDate(e.date);
+  document.getElementById('modal-mood').textContent=e.mood?`${moodEmoji[e.mood]} ${moodLabel[e.mood]}`:'';
+  const sec=[];
+  if(e.body)    sec.push(`<div class="modal-section"><div class="modal-section-label lbl-diary">日記</div><div class="modal-section-body">${escapeHTML(e.body)}</div></div>`);
+  if(e.memo)    sec.push(`<div class="modal-section"><div class="modal-section-label lbl-memo">📝 メモ</div><div class="modal-section-body">${escapeHTML(e.memo)}</div></div>`);
+  if(e.insight) sec.push(`<div class="modal-section"><div class="modal-section-label lbl-insight">💡 気づき</div><div class="modal-section-body">${escapeHTML(e.insight)}</div></div>`);
+  if(e.worry)   sec.push(`<div class="modal-section"><div class="modal-section-label lbl-worry">🌀 悩み</div><div class="modal-section-body">${escapeHTML(e.worry)}</div></div>`);
+  document.getElementById('modal-sections').innerHTML=sec.join('<hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">');
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(e) { if(e.target===document.getElementById('modal')) document.getElementById('modal').classList.remove('open'); }
+
+/* ---- view switch ---- */
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item')[{today:0,history:1,reflect:2}[name]]?.classList.add('active');
+  if(name==='history') renderHistoryEntries();
+  if(name==='reflect') renderReflectView();
+}
+
+function escapeHTML(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ---- seed demo ---- */
+function seedDemoData() {
+  if(loadEntries().length>0) return;
+  const now=new Date();
+  const demo=[
+    {daysAgo:1, body:'今日は久しぶりに早起きできた。朝の空気が気持ちよくて、近所を少し歩いた。小さなことだけど、一日がうまく回った気がする。', memo:'明日：歯医者の予約を確認する\n先週読みかけの本を読み返す', insight:'', worry:'', mood:'happy'},
+    {daysAgo:2, body:'会議が続いて疲れた。でも夕飯においしいカレーを作ったら気分が少し楽になった。', memo:'', insight:'自炊すると気持ちが落ち着くことに気づいた。忙しいときこそ料理をする価値があるかも。', worry:'来週のプレゼンが不安。準備が追いついていない気がする。', mood:'tired'},
+    {daysAgo:5, body:'友人から突然連絡が来た。久しぶりすぎて最初は戸惑ったけど、話してみたら楽しかった。', memo:'友人おすすめの映画：「ドライブ・マイ・カー」', insight:'人とつながることの大切さを実感した。疎遠になっていても、また話せるものだ。', worry:'', mood:'happy'},
+    {daysAgo:8, body:'特に何もなかった日。こういう平穏な日を記録しておくことも大事だと思って書いた。', memo:'', insight:'', worry:'なんとなく将来のことが心配。具体的ではないけど、漠然とした不安がある。', mood:'neutral'},
+    {daysAgo:14, body:'先週から気になっていたプロジェクトがようやく前進した。自分を信じて続けてよかった。', memo:'参考にしたリソース：デザインシステムの記事をブックマーク', insight:'焦らず続けることが一番の近道だと改めて感じた。', worry:'', mood:'happy'},
+    {daysAgo:21, body:'少し落ち込んでいる。理由はよくわからないけど、こういう日もある。', memo:'', insight:'', worry:'人間関係で少し引っかかることがあった。自分の受け取り方の問題なのか、相手の言い方なのか、まだわからない。', mood:'sad'},
+    {daysAgo:35, body:'新しいことを始めた月。緊張したけど、やってみると案外なんとかなるものだ。', memo:'新しく始めたこと：朝のストレッチ習慣', insight:'「やる前の恐怖」と「やってみた後の感覚」は、いつも全然違う。', worry:'', mood:'neutral'},
+  ];
+  const entries=demo.map(d=>{
+    const dt=new Date(now); dt.setDate(dt.getDate()-d.daysAgo);
+    return {date:dt.toISOString().slice(0,10), body:d.body, memo:d.memo, insight:d.insight, worry:d.worry, mood:d.mood, savedAt:dt.toISOString()};
+  });
+  saveEntries(entries);
+}
+
+seedDemoData();
+init();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW error:', err));
+  });
+}
+</script>
+</body>
+</html>
