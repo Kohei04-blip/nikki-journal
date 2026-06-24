@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>記録を編集 — Nikki</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#0A0A0A; --bg2:#111111; --card:#161616; --card2:#1C1C1C; --border:#282828;
+  --gold:#C8A96E; --gold-dim:rgba(200,169,110,0.12);
+  --text:#F5F0E8; --text-dim:#8A8070; --text-muted:#4A4540;
+  --memo:#6E9FC8; --insight:#7EC87A; --worry:#C87A7A;
+}
+html { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:15px; line-height:1.6; }
+body { min-height:100vh; display:flex; }
+.sidebar { width:240px; flex-shrink:0; background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:32px 0; position:sticky; top:0; height:100vh; }
+.logo { font-family:'DM Serif Display',serif; font-size:20px; color:var(--gold); padding:0 24px 28px; border-bottom:1px solid var(--border); }
+.logo small { display:block; font-size:10px; font-family:'Inter',sans-serif; letter-spacing:.2em; text-transform:uppercase; color:var(--text-dim); margin-top:2px; }
+.nav { padding:16px 10px; }
+.nav a { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; font-size:14px; color:var(--text-dim); text-decoration:none; transition:all .15s; margin-bottom:2px; }
+.nav a:hover { background:var(--card); color:var(--text); }
+.main { flex:1; padding:48px; max-width:800px; }
+.date-eyebrow { font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; }
+.page-title { font-family:'DM Serif Display',serif; font-size:40px; line-height:1.1; margin-bottom:8px; }
+.page-title em { font-style:italic; color:var(--gold); }
+.sub-date { font-size:13px; color:var(--text-dim); margin-bottom:32px; }
+.field-group { margin-bottom:20px; }
+.field-label { font-size:10px; letter-spacing:.18em; text-transform:uppercase; font-weight:600; margin-bottom:8px; display:block; }
+.field-label.gold { color:var(--gold); }
+.field-label.memo { color:var(--memo); }
+.field-label.insight { color:var(--insight); }
+.field-label.worry { color:var(--worry); }
+textarea { width:100%; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 18px; font-family:'Inter',sans-serif; font-size:14px; color:var(--text); line-height:1.8; resize:none; outline:none; transition:border-color .2s; }
+textarea:focus { border-color:rgba(200,169,110,.4); }
+textarea::placeholder { color:var(--text-muted); }
+.mood-row { display:flex; gap:8px; flex-wrap:wrap; }
+.mood-radio { display:none; }
+.mood-label { background:var(--card); border:1px solid var(--border); border-radius:50px; padding:7px 14px; font-size:13px; cursor:pointer; color:var(--text-dim); transition:all .15s; display:inline-block; }
+.mood-label:hover { border-color:var(--gold); color:var(--text); }
+.mood-radio:checked + .mood-label { background:var(--gold-dim); border-color:var(--gold); color:var(--text); }
+.btn-row { display:flex; gap:10px; margin-top:28px; }
+.btn-primary { background:var(--gold); color:var(--bg); border:none; border-radius:8px; padding:11px 26px; font-family:'Inter',sans-serif; font-size:14px; font-weight:600; cursor:pointer; }
+.btn-primary:hover { opacity:.88; }
+.btn-secondary { background:transparent; border:1px solid var(--border); color:var(--text-dim); border-radius:8px; padding:10px 20px; font-family:'Inter',sans-serif; font-size:14px; cursor:pointer; text-decoration:none; display:inline-block; transition:all .15s; }
+.btn-secondary:hover { border-color:var(--gold); color:var(--gold); }
+@media (max-width:640px) { .sidebar { display:none; } .main { padding:24px 16px 60px; } }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">Nikki<small>Your Journal</small></div>
+  <nav class="nav">
+    <a th:href="@{/today}">✦ 今日</a>
+    <a th:href="@{/history}">◈ 過去の記録</a>
+    <a th:href="@{/reflect}">◎ 振り返り</a>
+  </nav>
+</aside>
+
+<main class="main">
+  <div class="date-eyebrow">記録を編集</div>
+  <div class="page-title">編集<em>モード</em></div>
+  <div class="sub-date" th:text="${#temporals.format(entry.date, 'yyyy年M月d日')}"></div>
+
+  <!--
+    ★ 編集フォーム
+    th:action="@{/entry/{id}/edit(id=${entry.id})}" → /entry/3/edit に POST
+    IDを動的にURLに埋め込む書き方
+  -->
+  <form th:action="@{/entry/{id}/edit(id=${entry.id})}" th:object="${entry}" method="post">
+
+    <!-- 気分 -->
+    <div class="field-group">
+      <span class="field-label gold">気分</span>
+      <div class="mood-row">
+        <input class="mood-radio" type="radio" id="e-happy"   name="mood" value="happy"   th:checked="${entry.mood == 'happy'}">
+        <label class="mood-label" for="e-happy">😊 良い</label>
+        <input class="mood-radio" type="radio" id="e-neutral" name="mood" value="neutral" th:checked="${entry.mood == 'neutral'}">
+        <label class="mood-label" for="e-neutral">😐 普通</label>
+        <input class="mood-radio" type="radio" id="e-sad"     name="mood" value="sad"     th:checked="${entry.mood == 'sad'}">
+        <label class="mood-label" for="e-sad">😔 辛い</label>
+        <input class="mood-radio" type="radio" id="e-angry"   name="mood" value="angry"   th:checked="${entry.mood == 'angry'}">
+        <label class="mood-label" for="e-angry">😤 もやもや</label>
+        <input class="mood-radio" type="radio" id="e-tired"   name="mood" value="tired"   th:checked="${entry.mood == 'tired'}">
+        <label class="mood-label" for="e-tired">😴 疲れた</label>
+      </div>
+    </div>
+
+    <!-- 日記 -->
+    <div class="field-group">
+      <label class="field-label gold" for="body">今日のこと</label>
+      <textarea id="body" th:field="*{body}" rows="7"
+                placeholder="今日はどんな一日でしたか？"></textarea>
+    </div>
+
+    <!-- メモ -->
+    <div class="field-group">
+      <label class="field-label memo" for="memo">📝 メモ</label>
+      <textarea id="memo" th:field="*{memo}" rows="4"
+                placeholder="ToDo、気になった情報…"></textarea>
+    </div>
+
+    <!-- 気づき -->
+    <div class="field-group">
+      <label class="field-label insight" for="insight">💡 気づき</label>
+      <textarea id="insight" th:field="*{insight}" rows="4"
+                placeholder="発見・学び・アハ体験…"></textarea>
+    </div>
+
+    <!-- 悩み -->
+    <div class="field-group">
+      <label class="field-label worry" for="worry">🌀 悩み</label>
+      <textarea id="worry" th:field="*{worry}" rows="4"
+                placeholder="悩み・不安・迷い…"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" type="submit">保存する</button>
+      <!--
+        ★ キャンセルボタン → 一覧ページに戻る
+        th:href で動的リンクにしている
+      -->
+      <a class="btn-secondary" th:href="@{/history}">キャンセル</a>
+    </div>
+
+  </form>
+</main>
+</body>
+</html>

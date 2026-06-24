@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>振り返り — Nikki</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#0A0A0A; --bg2:#111111; --card:#161616; --card2:#1C1C1C; --border:#282828;
+  --gold:#C8A96E; --gold-dim:rgba(200,169,110,0.12);
+  --text:#F5F0E8; --text-dim:#8A8070; --text-muted:#4A4540;
+  --memo:#6E9FC8; --insight:#7EC87A; --worry:#C87A7A;
+}
+html { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:15px; line-height:1.6; }
+body { min-height:100vh; display:flex; }
+.sidebar { width:240px; flex-shrink:0; background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:32px 0; position:sticky; top:0; height:100vh; }
+.logo { font-family:'DM Serif Display',serif; font-size:20px; color:var(--gold); padding:0 24px 28px; border-bottom:1px solid var(--border); }
+.logo small { display:block; font-size:10px; font-family:'Inter',sans-serif; letter-spacing:.2em; text-transform:uppercase; color:var(--text-dim); margin-top:2px; }
+.nav { padding:16px 10px; }
+.nav a { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; font-size:14px; color:var(--text-dim); text-decoration:none; transition:all .15s; margin-bottom:2px; }
+.nav a:hover { background:var(--card); color:var(--text); }
+.nav a.active { background:var(--card2); color:var(--text); }
+.main { flex:1; padding:48px; max-width:800px; }
+.date-eyebrow { font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; }
+.page-title { font-family:'DM Serif Display',serif; font-size:40px; line-height:1.1; margin-bottom:36px; }
+.page-title em { font-style:italic; color:var(--gold); }
+.empty-msg { color:var(--text-muted); font-size:14px; line-height:2.2; }
+
+/* 振り返りカード */
+.reflect-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:16px; }
+.reflect-label { font-family:'DM Serif Display',serif; font-size:14px; color:var(--gold); font-style:italic; margin-bottom:4px; }
+.reflect-date { font-size:12px; color:var(--text-muted); margin-bottom:14px; }
+.reflect-mood { font-size:12px; color:var(--text-muted); margin-bottom:14px; }
+.reflect-section { margin-bottom:14px; }
+.reflect-section-label { font-size:10px; letter-spacing:.15em; text-transform:uppercase; font-weight:600; margin-bottom:6px; }
+.lbl-diary   { color:var(--gold); }
+.lbl-memo    { color:var(--memo); }
+.lbl-insight { color:var(--insight); }
+.lbl-worry   { color:var(--worry); }
+.reflect-section-body { font-size:14px; color:var(--text-dim); line-height:1.8; white-space:pre-wrap; }
+.reflect-actions { margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
+.act-link { font-size:12px; color:var(--text-muted); text-decoration:none; padding:5px 12px; border:1px solid var(--border); border-radius:6px; transition:all .15s; }
+.act-link:hover { color:var(--gold); border-color:var(--gold); }
+hr.inner { border:none; border-top:1px solid var(--border); margin:12px 0; }
+@media (max-width:640px) { .sidebar { display:none; } .main { padding:24px 16px 60px; } }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">Nikki<small>Your Journal</small></div>
+  <nav class="nav">
+    <a th:href="@{/today}">✦ 今日</a>
+    <a th:href="@{/history}">◈ 過去の記録</a>
+    <a th:href="@{/reflect}" class="active">◎ 振り返り</a>
+  </nav>
+</aside>
+
+<main class="main">
+  <div class="date-eyebrow">過去の自分と対話する</div>
+  <div class="page-title">振り<em>返り</em></div>
+
+  <!--
+    ★ th:if="${#lists.isEmpty(reflections)}" — リストが空なら表示
+  -->
+  <div class="empty-msg" th:if="${#lists.isEmpty(reflections)}">
+    振り返れる記録はまだありません。<br>
+    毎日記録を続けると、過去の自分が現れます。
+  </div>
+
+  <!--
+    ★ th:unless — th:if の逆。条件が false のとき表示
+    ここでは reflections が空でない場合にループ表示
+  -->
+  <div th:unless="${#lists.isEmpty(reflections)}">
+    <!--
+      ★ th:each で ReflectionItem のリストをループ
+      item.label → ReflectionItem.getLabel()
+      item.entry → ReflectionItem.getEntry()
+      Thymeleafは get を自動省略して ${item.label} と書ける
+    -->
+    <div class="reflect-card" th:each="item : ${reflections}">
+      <div class="reflect-label" th:text="${item.label} + 'の記録'">〇ヶ月前の記録</div>
+      <div class="reflect-date"
+           th:text="${#temporals.format(item.entry.date, 'yyyy年M月d日')} + '（' + ${#temporals.format(item.entry.date, 'E', #locale)} + '）'">
+      </div>
+
+      <div class="reflect-mood"
+           th:if="${item.entry.mood != null}"
+           th:text="${item.entry.moodEmoji} + ' ' + ${item.entry.moodLabel}">
+      </div>
+
+      <!-- 日記セクション -->
+      <div class="reflect-section" th:if="${item.entry.body != null and !#strings.isEmpty(item.entry.body)}">
+        <div class="reflect-section-label lbl-diary">日記</div>
+        <div class="reflect-section-body" th:text="${item.entry.body}"></div>
+      </div>
+
+      <hr class="inner" th:if="${item.entry.memo != null and !#strings.isEmpty(item.entry.memo)}">
+
+      <!-- メモセクション -->
+      <div class="reflect-section" th:if="${item.entry.memo != null and !#strings.isEmpty(item.entry.memo)}">
+        <div class="reflect-section-label lbl-memo">📝 メモ</div>
+        <div class="reflect-section-body" th:text="${item.entry.memo}"></div>
+      </div>
+
+      <hr class="inner" th:if="${item.entry.insight != null and !#strings.isEmpty(item.entry.insight)}">
+
+      <!-- 気づきセクション -->
+      <div class="reflect-section" th:if="${item.entry.insight != null and !#strings.isEmpty(item.entry.insight)}">
+        <div class="reflect-section-label lbl-insight">💡 気づき</div>
+        <div class="reflect-section-body" th:text="${item.entry.insight}"></div>
+      </div>
+
+      <hr class="inner" th:if="${item.entry.worry != null and !#strings.isEmpty(item.entry.worry)}">
+
+      <!-- 悩みセクション -->
+      <div class="reflect-section" th:if="${item.entry.worry != null and !#strings.isEmpty(item.entry.worry)}">
+        <div class="reflect-section-label lbl-worry">🌀 悩み</div>
+        <div class="reflect-section-body" th:text="${item.entry.worry}"></div>
+      </div>
+
+      <!-- 編集リンク -->
+      <div class="reflect-actions">
+        <a class="act-link" th:href="@{/entry/{id}/edit(id=${item.entry.id})}">✏️ 編集</a>
+      </div>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

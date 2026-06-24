@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    ★ Spring Boot の「親POM」を継承する
+    これにより、ライブラリのバージョン管理を Spring Boot に任せられる。
+    自分でバージョンを調べて書く必要がなくなる。
+  -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.2.5</version>
+    <relativePath/>
+  </parent>
+
+  <!-- このプロジェクト自身の識別情報 -->
+  <groupId>com.example</groupId>
+  <artifactId>nikki</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>nikki</name>
+  <description>日記アプリ（学習用）</description>
+
+  <properties>
+    <java.version>17</java.version>
+  </properties>
+
+  <dependencies>
+
+    <!--
+      ★ spring-boot-starter-web
+      Spring MVC（@Controller, @GetMapping など）と
+      組み込みTomcatサーバーが入る。これ一つでWebアプリが動く。
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!--
+      ★ spring-boot-starter-thymeleaf
+      サーバー側でHTMLを組み立てるテンプレートエンジン。
+      th:text や th:each などの属性でJavaの値をHTMLに埋め込める。
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-thymeleaf</artifactId>
+    </dependency>
+
+    <!--
+      ★ spring-boot-starter-data-jpa
+      JPA（Java Persistence API）のサポート。
+      SQLを自分で書かなくても、メソッド名でDB操作できるようになる。
+      例: findByDate() → SELECT * FROM entry WHERE date = ?
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <!--
+      ★ PostgreSQL ドライバー
+      本番環境（Render など）で使う永続化DBのドライバー。
+      アプリが再起動してもデータが消えない。
+      scope=runtime → 実行時だけ必要（コンパイルには不要）
+
+      【H2との違い】
+        H2         → インメモリ。再起動でデータ消滅。設定ゼロ。開発専用。
+        PostgreSQL → ディスクに保存。再起動してもデータ保持。本番向き。
+    -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!--
+      ★ H2（ローカル開発用に残す）
+      application-local.properties で spring.profiles.active=local にすると
+      PostgreSQL の代わりに H2 で起動できる。
+      本番（Render）では使わないため optional=true にしておく。
+    -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+      <optional>true</optional>
+    </dependency>
+
+    <!--
+      ★ spring-boot-starter-validation
+      @NotBlank などのバリデーションアノテーションが使えるようになる。
+      フォームの入力チェックに使う。
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <!-- テスト用（自動生成されるので残しておく） -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        Spring Boot Maven Plugin。
+        「mvn spring-boot:run」で起動できるようになる。
+        「mvn package」で実行可能なJARファイルが作れる。
+      -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
